@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-summarizer.py - Ask user for a search query, run semantic search, and output a combined summary of the top 5 results.
+summarizer.py - Summarize the top-K search results.
 Uses semantic_search_engine for indexing and search.
 """
 
 import re
 import sys
 
-from semantic_search_engine import PDF_DIR, build_index, search
+from semantic_search_engine import build_index, resolve_data_dir, search
 
 
 def first_sentences(text: str, max_sentences: int = 10, max_chars: int = 600) -> str:
@@ -42,8 +42,9 @@ def summarize_results(results: list[dict], chunks: list[dict]) -> None:
             combined_parts.append(full_text.strip())
     combined_text = " ".join(combined_parts)
 
+    k = len(results)
     print("\n" + "=" * 60)
-    print("COMBINED SUMMARY (TOP 5 RESULTS)")
+    print(f"COMBINED SUMMARY (TOP {k} RESULTS)")
     print("=" * 60)
     print("\nSummary:\n")
     print(first_sentences(combined_text))
@@ -54,19 +55,17 @@ def summarize_results(results: list[dict], chunks: list[dict]) -> None:
 
 
 def main():
-    print("Loading PDF index (this may take a moment)...")
+    print("Loading index (this may take a moment)...")
     try:
-        chunks, embeddings, model = build_index(pdf_dir=PDF_DIR)
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    except ValueError as e:
+        data_dir = resolve_data_dir(None, "./files.zip", "./data")
+        chunks, embeddings, model = build_index(data_dir)
+    except (FileNotFoundError, ValueError) as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
     print("Index ready.\n")
     while True:
-        query = input("Enter search query (or press Space and Enter to quit): ").strip()
+        query = input("Enter search query (or press Enter to quit): ").strip()
         if not query:
             print("Goodbye.")
             break
